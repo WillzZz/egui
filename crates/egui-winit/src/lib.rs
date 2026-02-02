@@ -616,9 +616,11 @@ impl State {
                 // backspace key. Without this, only `egui::ImeEvent::Disabled`
                 // is emitted here, leading to the last character being left in
                 // TextEdit in such situation.
-                self.egui_input
-                    .events
-                    .push(egui::Event::Ime(egui::ImeEvent::Preedit(String::new())));
+                if cfg!(target_os = "macos") {
+                    self.egui_input
+                        .events
+                        .push(egui::Event::Ime(egui::ImeEvent::Preedit(String::new())));
+                }
                 self.ime_event_disable();
             }
         }
