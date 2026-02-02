@@ -528,13 +528,14 @@ impl Focus {
         if let Some(id) = self.id_next_frame.take() {
             self.focused_widget = Some(FocusWidget::new(id));
         }
-        let event_filter = self.focused_widget.map(|w| w.filter).unwrap_or_default();
+        let _event_filter = self.focused_widget.map(|w| w.filter).unwrap_or_default();
 
         self.id_requested_by_accesskit = None;
 
         self.focus_direction = FocusDirection::None;
 
         for event in &new_input.events {
+        /*
             if !event_filter.matches(event)
                 && let crate::Event::Key {
                     key,
@@ -564,6 +565,7 @@ impl Focus {
             {
                 self.focus_direction = cardinality;
             }
+        */
 
             if let crate::Event::AccessKitActionRequest(accesskit::ActionRequest {
                 action: accesskit::Action::Focus,
