@@ -253,6 +253,7 @@ pub struct TableBuilder<'a> {
     cell_layout: egui::Layout,
     scroll_options: TableScrollOptions,
     sense: egui::Sense,
+    center: bool,
 }
 
 impl<'a> TableBuilder<'a> {
@@ -267,6 +268,7 @@ impl<'a> TableBuilder<'a> {
             cell_layout,
             scroll_options: Default::default(),
             sense: egui::Sense::hover(),
+            center: false,
         }
     }
 
@@ -301,6 +303,19 @@ impl<'a> TableBuilder<'a> {
     #[inline]
     pub fn sense(mut self, sense: egui::Sense) -> Self {
         self.sense = sense;
+        self
+    }
+
+    /// Center table columns horizontally within the available width.
+    ///
+    /// When enabled, if the total column width is narrower than the
+    /// available width, columns are offset to the right by half the
+    /// difference.
+    ///
+    /// Default: `false`.
+    #[inline]
+    pub fn center(mut self, center: bool) -> Self {
+        self.center = center;
         self
     }
 
@@ -468,6 +483,7 @@ impl<'a> TableBuilder<'a> {
             cell_layout,
             scroll_options,
             sense,
+            center,
         } = self;
 
         for (i, column) in columns.iter_mut().enumerate() {
@@ -486,6 +502,12 @@ impl<'a> TableBuilder<'a> {
         let (is_sizing_pass, state) =
             TableState::load(ui, state_id, resizable, &columns, available_width);
 
+        let x_offset = if center {
+            center_offset(&state.column_widths, available_width, ui.spacing().item_spacing.x)
+        } else {
+            0.0
+        };
+
         let mut max_used_widths = vec![0.0; columns.len()];
         let table_top = ui.cursor().top();
 
@@ -494,7 +516,7 @@ impl<'a> TableBuilder<'a> {
             ui_builder = ui_builder.sizing_pass();
         }
         ui.scope_builder(ui_builder, |ui| {
-            let mut layout = StripLayout::new(ui, CellDirection::Horizontal, cell_layout, sense);
+            let mut layout = StripLayout::new(ui, CellDirection::Horizontal, cell_layout, sense, x_offset);
             let mut response: Option<Response> = None;
             add_header_row(TableRow {
                 layout: &mut layout,
@@ -527,6 +549,7 @@ impl<'a> TableBuilder<'a> {
             cell_layout,
             scroll_options,
             sense,
+            center_offset: x_offset,
         }
     }
 
@@ -546,6 +569,7 @@ impl<'a> TableBuilder<'a> {
             cell_layout,
             scroll_options,
             sense,
+            center,
         } = self;
 
         let striped = striped.unwrap_or_else(|| ui.visuals().striped);
@@ -554,6 +578,12 @@ impl<'a> TableBuilder<'a> {
 
         let (is_sizing_pass, state) =
             TableState::load(ui, state_id, resizable, &columns, available_width);
+
+        let x_offset = if center {
+            center_offset(&state.column_widths, available_width, ui.spacing().item_spacing.x)
+        } else {
+            0.0
+        };
 
         let max_used_widths = vec![0.0; columns.len()];
         let table_top = ui.cursor().top();
@@ -572,9 +602,18 @@ impl<'a> TableBuilder<'a> {
             cell_layout,
             scroll_options,
             sense,
+            center_offset: x_offset,
         }
         .body(add_body_contents)
     }
+}
+
+// ----------------------------------------------------------------------------
+
+fn center_offset(column_widths: &[f32], available_width: f32, spacing: f32) -> f32 {
+    let total: f32 = column_widths.iter().sum::<f32>()
+        + spacing * column_widths.len().saturating_sub(1) as f32;
+    ((available_width - total) / 2.0).max(0.0)
 }
 
 // ----------------------------------------------------------------------------
@@ -697,6 +736,7 @@ pub struct Table<'a> {
     scroll_options: TableScrollOptions,
 
     sense: egui::Sense,
+    center_offset: f32,
 }
 
 impl Table<'_> {
@@ -726,6 +766,7 @@ impl Table<'_> {
             cell_layout,
             scroll_options,
             sense,
+            center_offset,
         } = self;
 
         let TableScrollOptions {
@@ -778,7 +819,7 @@ impl Table<'_> {
                 let hovered_row_index =
                     ui.data_mut(|data| data.remove_temp::<usize>(hovered_row_index_id));
 
-                let layout = StripLayout::new(ui, CellDirection::Horizontal, cell_layout, sense);
+                let layout = StripLayout::new(ui, CellDirection::Horizontal, cell_layout, sense, center_offset);
 
                 add_body_contents(TableBody {
                     layout,
@@ -811,7 +852,7 @@ impl Table<'_> {
         let bottom = ui.min_rect().bottom();
 
         let spacing_x = ui.spacing().item_spacing.x;
-        let mut x = cursor_position.x - spacing_x * 0.5;
+        let mut x = cursor_position.x + center_offset - spacing_x * 0.5;
         for (i, column_width) in state.column_widths.iter_mut().enumerate() {
             let column = &columns[i];
             let column_is_resizable = column.resizable.unwrap_or(resizable);

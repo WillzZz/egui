@@ -52,6 +52,7 @@ pub struct StripLayout<'l> {
 
     cell_layout: egui::Layout,
     sense: Sense,
+    x_offset: f32,
 }
 
 impl<'l> StripLayout<'l> {
@@ -60,6 +61,7 @@ impl<'l> StripLayout<'l> {
         direction: CellDirection,
         cell_layout: egui::Layout,
         sense: Sense,
+        x_offset: f32,
     ) -> Self {
         let rect = ui.available_rect_before_wrap();
         let pos = rect.left_top();
@@ -68,10 +70,11 @@ impl<'l> StripLayout<'l> {
             ui,
             direction,
             rect,
-            cursor: pos,
+            cursor: Pos2 { x: pos.x + x_offset, y: pos.y },
             max: pos,
             cell_layout,
             sense,
+            x_offset,
         }
     }
 
@@ -179,7 +182,7 @@ impl<'l> StripLayout<'l> {
         match self.direction {
             CellDirection::Horizontal => {
                 self.cursor.y = self.max.y + self.ui.spacing().item_spacing.y;
-                self.cursor.x = self.rect.left();
+                self.cursor.x = self.rect.left() + self.x_offset;
             }
             CellDirection::Vertical => {
                 self.cursor.x = self.max.x + self.ui.spacing().item_spacing.x;

@@ -116,6 +116,7 @@ impl<'a> StripBuilder<'a> {
             CellDirection::Horizontal,
             self.cell_layout,
             self.sense,
+            0.0,
         );
         strip(Strip {
             layout: &mut layout,
@@ -144,6 +145,7 @@ impl<'a> StripBuilder<'a> {
             CellDirection::Vertical,
             self.cell_layout,
             self.sense,
+            0.0,
         );
         strip(Strip {
             layout: &mut layout,
