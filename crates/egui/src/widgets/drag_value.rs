@@ -47,6 +47,7 @@ pub struct DragValue<'a> {
     custom_formatter: Option<NumFormatter<'a>>,
     custom_parser: Option<NumParser<'a>>,
     update_while_editing: bool,
+    id: Option<Id>,
 }
 
 impl<'a> DragValue<'a> {
@@ -78,7 +79,16 @@ impl<'a> DragValue<'a> {
             custom_formatter: None,
             custom_parser: None,
             update_while_editing: true,
+            id: None,
         }
+    }
+
+    /// Set an explicit ID for this widget.
+    /// When set, this ID is used instead of the auto-generated one.
+    #[inline]
+    pub fn id(mut self, id: Id) -> Self {
+        self.id = Some(id);
+        self
     }
 
     /// How much the value changes when dragged one point (logical pixel).
@@ -440,11 +450,12 @@ impl Widget for DragValue<'_> {
             custom_formatter,
             custom_parser,
             update_while_editing,
+            id: explicit_id,
         } = self;
 
         let shift = ui.input(|i| i.modifiers.shift_only());
         // The widget has the same ID whether it's in edit or button mode.
-        let id = ui.next_auto_id();
+        let id = explicit_id.unwrap_or_else(|| ui.next_auto_id());
         let is_slow_speed = shift && ui.ctx().is_being_dragged(id);
 
         // The following ensures that when a `DragValue` receives focus,

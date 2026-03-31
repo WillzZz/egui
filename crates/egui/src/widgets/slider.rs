@@ -118,6 +118,7 @@ pub struct Slider<'a> {
     trailing_fill: Option<bool>,
     handle_shape: Option<HandleShape>,
     update_while_editing: bool,
+    drag_value_id: Option<crate::Id>,
 }
 
 impl<'a> Slider<'a> {
@@ -165,7 +166,16 @@ impl<'a> Slider<'a> {
             trailing_fill: None,
             handle_shape: None,
             update_while_editing: true,
+            drag_value_id: None,
         }
+    }
+
+    /// Set an explicit ID for the internal DragValue widget.
+    /// Useful for requesting focus on the text input.
+    #[inline]
+    pub fn drag_value_id(mut self, id: crate::Id) -> Self {
+        self.drag_value_id = Some(id);
+        self
     }
 
     /// Control whether or not the slider shows the current value.
@@ -917,6 +927,9 @@ impl Slider<'_> {
                 .suffix(self.suffix.clone())
                 .prefix(self.prefix.clone())
                 .update_while_editing(self.update_while_editing);
+            if let Some(id) = self.drag_value_id {
+                dv = dv.id(id);
+            }
 
             match self.clamping {
                 SliderClamping::Never => {}
