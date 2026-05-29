@@ -1171,6 +1171,7 @@ impl<'a> TableBody<'a> {
         let scroll_to_y_range_offset = self.layout.cursor.y as f64;
 
         let mut cursor_y: f64 = 0.0;
+        let mut found_visible = false;
 
         // Skip the invisible rows, and populate the first non-virtual row.
         for (row_index, row_height) in &mut enumerated_heights {
@@ -1203,8 +1204,20 @@ impl<'a> TableBody<'a> {
                     response: &mut response,
                 });
                 self.capture_hover_state(&response, row_index);
+                found_visible = true;
                 break;
             }
+        }
+
+        // The table is entirely above the visible viewport (scroll_offset_y
+        // exceeds the total table height). Loops 2 and 3 will not run because
+        // the iterator is exhausted, so this is the only chance to reserve
+        // the table's full height. Without it the table reports zero size to
+        // the parent ScrollArea, max_offset shrinks by the table's height,
+        // and the parent clamp snaps the scroll offset upward — visible as a
+        // flicker/bounce when scrolling the table just out of view.
+        if !found_visible {
+            self.add_buffer(cursor_y as f32);
         }
 
         // populate visible rows:
